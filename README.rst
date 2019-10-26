@@ -1,16 +1,19 @@
 pygatt - Python Module for Bluetooth LE Generic Attribute Profile (GATT).
 =========================================================================
 
+This is a fork of https://github.com/peplin/pygatt where we will try to implement new backends, namely DBus and BGAPI v2.
+
 This Module allows reading and writing to GATT descriptors on devices
 such as fitness trackers, sensors, and anything implementing standard
 GATT Descriptor behavior.
 
-pygatt provides a Pythonic API by wrapping three different backends:
+This version of pygatt provides a Pythonic API by wrapping three different backends:
 
--  BlueZ (requires Linux), using BlueZ's D-Bus API.
+-  BlueZ (requires Linux), using BlueZ's D-Bus API via pydbus
 -  BlueZ (requires Linux), using the deprecated ``gatttool`` command-line
    utility.
 -  Bluegiga's BGAPI, compatible with USB adapters like the BLED112.
+-  (ToDo) Silicon Labs BGAPI (v2) for Blue Gecko BLE modules
 
 Motivation
 ----------
@@ -185,7 +188,7 @@ If you provide the COM port name, but still get an error such as
 ``WindowsError(2, 'The system cannot find the file specified.')``, try
 changing the COM port of the device to a value under 10, e.g. ``COM9``.
 
-Authors
+Authors (pygatt)
 -------
 
 - Jeff Rowberg @jrowberg https://github.com/jrowberg/bglib
@@ -216,22 +219,9 @@ Authors
 - Jakub Hrabec
 - John Schoenberger
 - Georgi Boiko
-- Andreas Brauchli
+- Andreas Brauchli https://github.com/abrauchli/pygatt.git (initial pydbus backend)
 
-Releasing to PyPI
------------------
-
-For the maintainers of the project, when you want to make a release:
-
--  Merge all of the changes into ``master``.
--  Update the version in ``setup.py``.
--  Update the ``CHANGELOG.mkd``
--  Tag the commit and push to GitHub (will need to push to a separate
-   branch of PR first since ``master`` is a protected branch).
--  Travis CI will take care of the rest - it will build and deploy
-   tagged commits to PyPI automatically.
-
-License
+License (pygatt)
 -------
 
 Copyright 2015 Stratos Inc. and Orion Labs
