@@ -1,5 +1,5 @@
 __title__ = 'pygatt'
-__version__ = '3.1.1'
+__version__ = '4.0.3'
 __license__ = 'Apache License, Version 2.0 and MIT License'
 __copyright__ = 'Copyright 2015 Stratos Inc. and Orion Labs'
 
@@ -26,7 +26,7 @@ setup(
     url='https://github.com/peplin/pygatt',
     install_requires=[
         'pyserial',
-        'enum34'
+        'enum-compat'
     ],
     setup_requires=[
         'coverage >= 3.7.1',

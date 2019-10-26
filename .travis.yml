@@ -1,18 +1,12 @@
+dist: xenial
 language: python
-sudo: true
+sudo: false
 python:
-- '3.2_with_system_site_packages'
-cache:
-  directories:
-  - "$HOME/.cache/pip"
-  - ".tox"
-
-before_install:
-- sudo apt-get update
-- sudo apt-get install -qq python3-gi gir1.2-glib-2.0
-install:
-- pip install tox
-script: tox --recreate
+  - '2.7'
+  - '3.7'
+cache: pip
+install: pip install tox-travis
+script: tox
 deploy:
   provider: pypi
   user: peplin

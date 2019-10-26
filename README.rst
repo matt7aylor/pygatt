@@ -19,13 +19,17 @@ Despite the popularity of BLE, we have yet to find a good programming
 interface for it on desktop computers. Since most peripherals are
 designed to work with smartphones, this space is neglected. One
 interactive interface, BlueZ's ``gatttool``, is functional but difficult
-to use programatically. BlueZ itself obviously works, but the interface
+to use programmatically. BlueZ itself obviously works, but the interface
 leaves something to be desired and only works in Linux.
 
 Requirements
 ------------
 
--  Python 2.7
+-  Python 2.7.5 or greater, or Python 3.5 or greater
+
+   -  Python 2.7.3's ``struct`` library has a bug that will break PyGATT - 2.7.5
+         or greater is recommended.
+
 -  BlueZ 5.42 or greater (with D-Bus) - required for the bluez backend only.
 -  BlueZ 5.18 or greater (with deprecated gatttool) - required for the gatttool
    backend only.
@@ -66,6 +70,18 @@ Install the latest development version of ``pygatt`` with pip:
 
     $ pip install git+https://github.com/peplin/pygatt
 
+Documentation
+----------
+
+The documentation for pygatt consists of:
+
+- This README
+- The code in the ``samples`` directory
+- The Python docstrings in the code itself.
+
+The ``BLEDevice`` and ``BLEBackend`` base classes are the primary interfaces for
+users of the library.
+
 Example Use
 -----------
 
@@ -79,7 +95,7 @@ to a device and get an instance of ``BLEDevice.``
 
     import pygatt
 
-    # The BGAPI backend will attemt to auto-discover the serial device name of the
+    # The BGAPI backend will attempt to auto-discover the serial device name of the
     # attached BGAPI-compatible USB adapter.
     adapter = pygatt.BGAPIBackend()
 
@@ -107,6 +123,36 @@ except for the initialization of the backend:
         adapter.start()
         device = adapter.connect('01:23:45:67:89:ab')
         value = device.char_read("a1e8f5b1-696b-4e4c-87c6-69dfe0b0093b")
+    finally:
+        adapter.stop()
+
+Notifications Example
+---------------------
+
+This example uses the gatttool backend to connect to a device with a specific
+MAC address, subscribes for notifications on a characteristic, and prints the
+data returned in each notification.
+
+.. code:: python
+
+    import pygatt
+    from binascii import hexlify
+
+    adapter = pygatt.GATTToolBackend()
+
+    def handle_data(handle, value):
+        """
+        handle -- integer, characteristic read handle the data was received on
+        value -- bytearray, the data returned in the notification
+        """
+        print("Received data: %s" % hexlify(value))
+
+    try:
+        adapter.start()
+        device = adapter.connect('01:23:45:67:89:ab')
+
+        device.subscribe("a1e8f5b1-696b-4e4c-87c6-69dfe0b0093b",
+                         callback=handle_data)
     finally:
         adapter.stop()
 
@@ -142,22 +188,35 @@ changing the COM port of the device to a value under 10, e.g. ``COM9``.
 Authors
 -------
 
--  Jeff Rowberg @jrowberg https://github.com/jrowberg/bglib
--  Greg Albrecht @ampledata https://github.com/ampledata/pygatt
--  Christopher Peplin @peplin https://github.com/peplin/pygatt
--  Morten Kjaergaard @mkjaergaard https://github.com/mkjaergaard/pygatt
--  Michael Saunby @msaunby https://github.com/msaunby/ble-sensor-pi
--  Steven Sloboda https://github.com/sloboste
--  Ilya Sukhanov @IlyaSukhanov
--  @dcliftreaves
--  Jonathan Dan
--  Ilann Adjedj
--  Ralph Hempel
--  Rene Jacobsen
--  Marcus Georgi
--  Alexandre Barachant
--  Michel Rivas Hernandez
--  Andreas Brauchli
+- Jeff Rowberg @jrowberg https://github.com/jrowberg/bglib
+- Greg Albrecht @ampledata https://github.com/ampledata/pygatt
+- Christopher Peplin @peplin https://github.com/peplin/pygatt
+- Morten Kjaergaard @mkjaergaard https://github.com/mkjaergaard/pygatt
+- Michael Saunby @msaunby https://github.com/msaunby/ble-sensor-pi
+- Steven Sloboda https://github.com/sloboste
+- Ilya Sukhanov @IlyaSukhanov
+- @dcliftreaves
+- Jonathan Dan
+- Ilann Adjedj
+- Ralph Hempel
+- Rene Jacobsen
+- Marcus Georgi
+- Alexandre Barachant
+- Michel Rivas Hernandez
+- Jean Regisser
+- David Martin
+- Pieter Hooimeijer
+- Thomas Li Fredriksen
+- Markus Proeller
+- lachtanek
+- Andrea Merello
+- Richard Mitchell
+- Daniel Santos
+- Andrew Connell
+- Jakub Hrabec
+- John Schoenberger
+- Georgi Boiko
+- Andreas Brauchli
 
 Releasing to PyPI
 -----------------

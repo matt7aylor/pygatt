@@ -3,6 +3,69 @@
 Release History
 ================
 
+V4.0.4
+------
+
+* Improvement: Remove Bluetooth specification PDFs, refer to bluetooth.com to
+  avoid copyright issues.
+
+V4.0.3
+------
+
+* Fix: Regression with receiving indications with GATTTOOL backend
+* Fix: Regression with subscribing to characteristics with GATTTOOL (need to use
+  writes, not commands) (#234)
+* Improvement: Don't require sudo for removing bonding (#234)
+
+V4.0.1
+------
+
+* Improvement: Wait longer for characteristics discovery with BGAPI backend (#201)
+* Fix: Protect against invalid BGAPI packets
+* Fix: Fix parsing fields from BGAPI connection status
+* Fix: Robust to non-UTF8 characters in hcitool scan results
+* Fix: Log correct connection flags from BGAPI response
+
+V4.0.0
+------
+
+* Feature: Add ``char_read_long`` for reading characteristics longer than a
+  single packet (#206, #177)
+* Feature: Add command to change MTU (GATTTool only) (#182)
+* Feature: Allow registering callbacks for device discovery events. (#176)
+* Feature: Support fetching BLE device MAC address (#150)
+* Improvement: Add better serial port error handling for BGAPI. (#162)
+* Improvement: Expand and allow overriding pexpect search buffer for gatttool
+  output to support devices with many characteristics without negatively
+  impacting performance (#209)
+* Improvement: Wait before re-opening BGAPI serial port to improve detection on
+  Windows. (#162)
+* Improvement: Add support for Python 3.7
+* Fix: Use ATT write (not command) by default for char_write
+* Fix: Wait longer for ATT write according to BlueGiga spec
+* Fix: Fix BGAPI device detection (#154)
+* Fix: Stop leaking file descriptors when erasing BLE bonds with GATTTool
+  backend (#188)
+* Fix: Typos (#173)
+* Drop official support for Python 3.4, 3.5 and 3.6.
+
+V3.2.1
+------
+
+- Improvement: Officially support Python 3.6.
+- Improvement: Permit use of non-standard characteristics in reserved range (#140)
+
+V3.2.0
+------
+
+- Fix: Reliably auto-reconnect after restarting BGAPI device. Fixes a bug in
+  first attempt at auto-reconnection, only worked in some environments. (#144)
+- Fix: Remove spurious "no handler for logger" warnings (#143)
+- Fix: Use enum-compat instead of enum34, to fix installation in Python 3.4+
+- Feature: Limit search window size for GATTTool backend, to avoid high CPU
+  usage for long running connections. (#123)
+- Feature: Add support for write commands to BGAPIBackend (#115)
+
 V3.1.1
 ------
 
