@@ -173,8 +173,8 @@ EventPacketType = Enum('EventPacketType', [
 # Map a tuple of (class, command) to an enum identifier for the packet
 RESPONSE_PACKET_MAPPING = {
     (0, 0): ResponsePacketType.system_reset,
-    (0, 1): ResponsePacketType.system_hello,
-    (0, 2): ResponsePacketType.system_address_get,
+    (1, 0): ResponsePacketType.system_hello,
+    (1, 3): ResponsePacketType.system_address_get,
     (0, 3): ResponsePacketType.system_reg_write,
     (0, 4): ResponsePacketType.system_reg_read,
     (0, 5): ResponsePacketType.system_get_counters,
@@ -188,10 +188,9 @@ RESPONSE_PACKET_MAPPING = {
     (0, 13): ResponsePacketType.system_endpoint_rx,
     (0, 14): ResponsePacketType.system_endpoint_set_watermarks,
 
-    (1, 0): ResponsePacketType.flash_ps_defrag,
     (1, 1): ResponsePacketType.flash_ps_dump,
     (1, 2): ResponsePacketType.flash_ps_erase_all,
-    (1, 3): ResponsePacketType.flash_ps_save,
+    #(1, 3): ResponsePacketType.flash_ps_save,
     (1, 4): ResponsePacketType.flash_ps_load,
     (1, 5): ResponsePacketType.flash_ps_erase,
     (1, 6): ResponsePacketType.flash_erase_page,
@@ -204,9 +203,9 @@ RESPONSE_PACKET_MAPPING = {
     (2, 4): ResponsePacketType.attributes_user_write_response,
 
     (3, 0): ResponsePacketType.connection_disconnect,
-    (3, 1): ResponsePacketType.connection_get_rssi,
+    #(3, 1): ResponsePacketType.connection_get_rssi,
     (3, 2): ResponsePacketType.connection_update,
-    (3, 3): ResponsePacketType.connection_version_update,
+    #(3, 3): ResponsePacketType.connection_version_update,
     (3, 4): ResponsePacketType.connection_channel_map_get,
     (3, 5): ResponsePacketType.connection_channel_map_set,
     (3, 6): ResponsePacketType.connection_features_get,
@@ -226,7 +225,7 @@ RESPONSE_PACKET_MAPPING = {
     (4, 10): ResponsePacketType.attclient_execute_write,
 
     (5, 0): ResponsePacketType.sm_encrypt_start,
-    (5, 1): ResponsePacketType.sm_set_bondable_mode,
+    (0x0f, 0): ResponsePacketType.sm_set_bondable_mode,
     (5, 2): ResponsePacketType.sm_delete_bonding,
     (5, 3): ResponsePacketType.sm_set_parameters,
     (5, 4): ResponsePacketType.sm_passkey_entry,
@@ -234,10 +233,10 @@ RESPONSE_PACKET_MAPPING = {
     (5, 6): ResponsePacketType.sm_set_oob_data,
 
     (6, 0): ResponsePacketType.gap_set_privacy_flags,
-    (6, 1): ResponsePacketType.gap_set_mode,
+    (3, 1): ResponsePacketType.gap_set_mode,
     (6, 2): ResponsePacketType.gap_discover,
     (6, 3): ResponsePacketType.gap_connect_direct,
-    (6, 4): ResponsePacketType.gap_end_procedure,
+    (3, 3): ResponsePacketType.gap_end_procedure,
     (6, 5): ResponsePacketType.gap_connect_selective,
     (6, 6): ResponsePacketType.gap_set_filtering,
     (6, 7): ResponsePacketType.gap_set_scan_parameters,
@@ -321,10 +320,10 @@ class BGLib(object):
         self.buffer = []
         self.expected_length = 0
         # Packet message types
-        self._ble_event = 0x80
-        self._ble_response = 0x00
-        self._wifi_event = 0x88
-        self._wifi_response = 0x08
+        self._ble_event = 0xa0
+        self._ble_response = 0x20
+        self._wifi_event = 0x88 # Remove? XXX
+        self._wifi_response = 0x08 # Remove? XXX
 
     def send_command(self, ser, packet):
         """
@@ -857,10 +856,10 @@ class BGLib(object):
 
         Returns a tuple of (PacketType, dict response data)
 
-          BGAPI packet structure (as of 2012-11-07):
+          BGAPI packet structure:
             Byte 0:
                   [7] - 1 bit, Message Type (MT)     Command/Response, 1 = Event
-                [6:3] - 4 bits, Technology Type (TT)    0000 = BLE, 0001 = Wi-Fi
+                [6:3] - 4 bits, Technology Type (TT)    0100 = BLEv2
                 [2:0] - 3 bits, Length High (LH)      Payload length (high bits)
             Byte 1:     8 bits, Length Low (LL)        Payload length (low bits)
             Byte 2:     8 bits, Class ID (CID)          Command class ID

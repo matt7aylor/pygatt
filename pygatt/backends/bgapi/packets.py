@@ -12,7 +12,7 @@ class BGAPICommandPacketBuilder(object):
 
     @staticmethod
     def system_address_get():
-        return pack('<4B', 0, 0, 0, 2)
+        return pack('<4B', 0x20, 0, 1, 3)
 
     @staticmethod
     def system_reg_write(address, value):
@@ -240,7 +240,7 @@ class BGAPICommandPacketBuilder(object):
 
     @staticmethod
     def sm_set_bondable_mode(bondable):
-        return pack('<4BB', 0, 1, 5, 1, bondable)
+        return pack('<4BB', 0x20, 1, 0x0f, 0, bondable)
 
     @staticmethod
     def sm_delete_bonding(handle):
@@ -268,8 +268,8 @@ class BGAPICommandPacketBuilder(object):
         return pack('<4BBB', 0, 2, 6, 0, peripheral_privacy, central_privacy)
 
     @staticmethod
-    def gap_set_mode(discover, connect):
-        return pack('<4BBB', 0, 2, 6, 1, discover, connect)
+    def gap_set_mode(discover, connect):  # Deprecated
+        return pack('<4BBB', 0x20, 0x02, 0x03, 0x01, discover, connect)
 
     @staticmethod
     def gap_discover(mode):
@@ -290,7 +290,7 @@ class BGAPICommandPacketBuilder(object):
 
     @staticmethod
     def gap_end_procedure():
-        return pack('<4B', 0, 0, 6, 4)
+        return pack('<4B', 0x20, 0, 3, 3)
 
     @staticmethod
     def gap_connect_selective(conn_interval_min, conn_interval_max,
