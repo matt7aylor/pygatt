@@ -518,6 +518,7 @@ class BGLib(object):
                 # 'hw': data[6]
             # }
         elif packet_type in [
+                ResponsePacketType.le_connection_close,
                 # ResponsePacketType.system_endpoint_tx,
                 # ResponsePacketType.system_whitelist_append,
                 # ResponsePacketType.system_whitelist_remove,
@@ -586,7 +587,6 @@ class BGLib(object):
                 'value': value_data
             }
         elif packet_type in [
-            ResponsePacketType.le_connection_close,
             ResponsePacketType.connection_update,
             ResponsePacketType.connection_version_update,
             ResponsePacketType.connection_channel_map_set,
