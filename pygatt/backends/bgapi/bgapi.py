@@ -123,7 +123,7 @@ class BGAPIBackend(BLEBackend):
             EventPacketType.connection_status: self._ble_evt_connection_status,
             EventPacketType.connection_disconnected: (
                 self._ble_evt_connection_disconnected),
-            EventPacketType.gap_scan_response: self._ble_evt_gap_scan_response,
+            EventPacketType.le_gap_scap_response: self._ble_evt_le_gap_scap_response,
             EventPacketType.sm_bond_status: self._ble_evt_sm_bond_status,
         }
 
@@ -232,9 +232,9 @@ class BGAPIBackend(BLEBackend):
 
         # Stop any ongoing procedure
         log.debug("Stopping any outstanding GAP procedure")
-        self.send_command(CommandBuilder.gap_end_procedure())
+        self.send_command(CommandBuilder.le_gap_end_procedure())
         try:
-            self.expect(ResponsePacketType.gap_end_procedure)
+            self.expect(ResponsePacketType.le_gap_end_procedure)
         except BGAPIError:
             # Ignore any errors if there was no GAP procedure running
             pass
@@ -271,10 +271,10 @@ class BGAPIBackend(BLEBackend):
     def disable_advertising(self):
         log.info("Disabling advertising")
         self.send_command(
-            CommandBuilder.gap_set_mode(
-                constants.gap_discoverable_mode['non_discoverable'],
+            CommandBuilder.le_gap_set_mode(
+                constants.le_gap_discoverable_mode['non_discoverable'],
                 constants.gap_connectable_mode['non_connectable']))
-        self.expect(ResponsePacketType.gap_set_mode)
+        self.expect(ResponsePacketType.le_gap_set_mode)
 
     def send_command(self, *args, **kwargs):
         with self._lock:
@@ -316,7 +316,7 @@ class BGAPIBackend(BLEBackend):
             self.expect(ResponsePacketType.sm_delete_bonding)
 
     def scan(self, timeout=10, scan_interval=75, scan_window=50, active=True,
-             discover_mode=constants.gap_discover_mode['observation'],
+             discover_mode=constants.le_gap_discover_mode['observation'],
              scan_cb=None, **kwargs):
         """
         Perform a scan to discover BLE devices.
@@ -326,7 +326,7 @@ class BGAPIBackend(BLEBackend):
         scan_window -- the number of milliseconds the scanner will listen on one
                      frequency for advertisement packets.
         active -- True --> ask sender for scan response data. False --> don't.
-        discover_mode -- one of the gap_discover_mode constants.
+        discover_mode -- one of the le_gap_discover_mode constants.
         scan_cb -- This callback function is called whenever a new BLE
                    advertising packet is received.
                    The function takes three parameters:
@@ -338,16 +338,16 @@ class BGAPIBackend(BLEBackend):
         # NOTE: the documentation seems to say that the times are in units of
         # 625us but the ranges it gives correspond to units of 1ms....
         self.send_command(
-            CommandBuilder.gap_set_scan_parameters(
+            CommandBuilder.le_gap_set_scan_parameters(
                 scan_interval, scan_window, parameters
             ))
 
-        self.expect(ResponsePacketType.gap_set_scan_parameters)
+        self.expect(ResponsePacketType.le_gap_set_scan_parameters)
 
         log.info("Starting an %s scan", "active" if active else "passive")
-        self.send_command(CommandBuilder.gap_discover(discover_mode))
+        self.send_command(CommandBuilder.le_gap_discover(discover_mode))
 
-        self.expect(ResponsePacketType.gap_discover)
+        self.expect(ResponsePacketType.le_gap_discover)
 
         log.info("Pausing for maximum %ds to allow scan to complete", timeout)
 
@@ -356,7 +356,7 @@ class BGAPIBackend(BLEBackend):
 
         while self._evt.is_set():
             try:
-                self.expect(EventPacketType.gap_scan_response,
+                self.expect(EventPacketType.le_gap_scap_response,
                             timeout=timeout)
             except ExpectedResponseTimeout:
                 pass
@@ -364,8 +364,8 @@ class BGAPIBackend(BLEBackend):
                 break
 
         log.info("Stopping scan")
-        self.send_command(CommandBuilder.gap_end_procedure())
-        self.expect(ResponsePacketType.gap_end_procedure)
+        self.send_command(CommandBuilder.le_gap_end_procedure())
+        self.expect(ResponsePacketType.le_gap_end_procedure)
 
         devices = []
         for address, info in self._devices_discovered.items():
@@ -380,8 +380,8 @@ class BGAPIBackend(BLEBackend):
         return devices
 
     def _end_procedure(self):
-        self.send_command(CommandBuilder.gap_end_procedure())
-        self.expect(ResponsePacketType.gap_end_procedure)
+        self.send_command(CommandBuilder.le_gap_end_procedure())
+        self.expect(ResponsePacketType.le_gap_end_procedure)
 
     def connect(self, address, timeout=5,
                 address_type=BLEAddressType.public,
@@ -749,7 +749,7 @@ class BGAPIBackend(BLEBackend):
                  args['latency'],
                  args['bonding'])
 
-    def _ble_evt_gap_scan_response(self, args):
+    def _ble_evt_le_gap_scap_response(self, args):
         """
         Handles the event for reporting the contents of an advertising or scan
         response packet.

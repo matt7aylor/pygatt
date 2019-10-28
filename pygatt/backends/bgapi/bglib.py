@@ -1,5 +1,6 @@
 """
-MODIFIED Bluegiga BGAPI/BGLib implementation
+MODIFIED BGAPI/BGLib implementation for BGAPI v2
+based on original work detailed below and modifications made in pygatt
 ============================================
 Bluegiga BGLib Python interface library
 2013-05-04 by Jeff Rowberg <jeff@rowberg.net>
@@ -148,19 +149,19 @@ ResponsePacketType = Enum('ResponsePacketType', [
     'connection_version_update',
     'connection_channel_map_get',
     'connection_channel_map_set',
-    'connection_features_get',
+    # 'connection_features_get',
     'connection_get_status',
     'connection_raw_tx',
 
     ### le_gap ### Similar to original, some changed and new commands XXX
-    'gap_set_privacy_flags',
-    'gap_set_mode',                 # XXX
-    'gap_discover',                 # XXX
+    'le_gap_set_scan_parameters',   # XXX DEPRECATED
+    'le_gap_end_procedure',
+    'le_gap_set_mode',                 # XXX DEPRECATED
+    'le_gap_discover',                 # XXX DEPRECATED
     'gap_connect_direct',           # XXX
-    'gap_end_procedure',            # XXX
+    'gap_set_privacy_flags',
     'gap_connect_selective',
     'gap_set_filtering',
-    'gap_set_scan_parameters',      # XXX
     'gap_set_adv_parameters',
     'gap_set_adv_data',
     'gap_set_directed_connectable_mode',
@@ -213,7 +214,7 @@ EventPacketType = Enum('EventPacketType', [
     # 'gatt_server_execute_write_completed'
 
     ### le-connection
-    'connection_status',                    # XXX
+    # 'connection_status',                    # XXX
     'connection_disconnected',              # XXX
     # New events
     # 'le_connection_opened'                # XXX new expectation on connect
@@ -255,7 +256,7 @@ EventPacketType = Enum('EventPacketType', [
     # 'sm_smp_data',
 
     ### le-gap ###
-    'gap_scan_response',                    # XXX
+    'le_gap_scap_response',                    # XXX
     # New events
     # 'le_gap_adv_timeout'
     # 'le_gap_scan_request'
@@ -304,11 +305,11 @@ RESPONSE_PACKET_MAPPING = {
 
     (3, 0): ResponsePacketType.connection_disconnect,
     #(3, 1): ResponsePacketType.connection_get_rssi,
-    (3, 2): ResponsePacketType.connection_update,
+    # (3, 2): ResponsePacketType.connection_update,
     #(3, 3): ResponsePacketType.connection_version_update,
     (3, 4): ResponsePacketType.connection_channel_map_get,
     (3, 5): ResponsePacketType.connection_channel_map_set,
-    (3, 6): ResponsePacketType.connection_features_get,
+    # (3, 6): ResponsePacketType.connection_features_get,
     (3, 7): ResponsePacketType.connection_get_status,
     (3, 8): ResponsePacketType.connection_raw_tx,
 
@@ -333,13 +334,13 @@ RESPONSE_PACKET_MAPPING = {
     (5, 6): ResponsePacketType.sm_set_oob_data,
 
     (6, 0): ResponsePacketType.gap_set_privacy_flags,
-    (3, 1): ResponsePacketType.gap_set_mode,
-    (6, 2): ResponsePacketType.gap_discover,
+    (3, 1): ResponsePacketType.le_gap_set_mode,
+    (3, 2): ResponsePacketType.le_gap_discover,
     (6, 3): ResponsePacketType.gap_connect_direct,
-    (3, 3): ResponsePacketType.gap_end_procedure,
+    (3, 3): ResponsePacketType.le_gap_end_procedure,
     (6, 5): ResponsePacketType.gap_connect_selective,
     (6, 6): ResponsePacketType.gap_set_filtering,
-    (6, 7): ResponsePacketType.gap_set_scan_parameters,
+    (3, 6): ResponsePacketType.le_gap_set_scan_parameters,
     (6, 8): ResponsePacketType.gap_set_adv_parameters,
     (6, 9): ResponsePacketType.gap_set_adv_data,
     (6, 10): ResponsePacketType.gap_set_directed_connectable_mode,
@@ -383,7 +384,7 @@ EVENT_PACKET_MAPPING = {
     (0x0a, 1): EventPacketType.gatt_server_user_read_request,
     (0x0a, 3): EventPacketType.gatt_server_characteristic_status,
 
-    (3, 0): EventPacketType.connection_status,
+    # (3, 0): EventPacketType.connection_status,
     # (3, 1): EventPacketType.connection_version_ind,
     # (3, 2): EventPacketType.connection_feature_ind,
     # (3, 3): EventPacketType.connection_raw_rx,
@@ -403,7 +404,7 @@ EVENT_PACKET_MAPPING = {
     (0x0f, 1): EventPacketType.sm_passkey_request,
     (5, 4): EventPacketType.sm_bond_status,
 
-    (6, 0): EventPacketType.gap_scan_response,
+    (3, 0): EventPacketType.le_gap_scap_response,
     # (6, 1): EventPacketType.gap_mode_changed,
 
     # (7, 0): EventPacketType.hardware_io_port_status,
@@ -527,14 +528,14 @@ class BGLib(object):
                 # ResponsePacketType.attclient_indicate_confirm,
                 ResponsePacketType.sm_delete_bonding,
                 ResponsePacketType.sm_passkey_entry,
-                ResponsePacketType.gap_set_mode,
-                ResponsePacketType.gap_discover,
-                ResponsePacketType.gap_end_procedure,
+                ResponsePacketType.le_gap_set_mode,
+                ResponsePacketType.le_gap_discover,
+                ResponsePacketType.le_gap_end_procedure,
                 ResponsePacketType.gap_set_filtering,
                 # ResponsePacketType.hardware_timer_comparator,
                 # ResponsePacketType.test_phy_end,
                 # ResponsePacketType.hardware_spi_config,
-                ResponsePacketType.gap_set_scan_parameters,
+                ResponsePacketType.le_gap_set_scan_parameters,
                 ResponsePacketType.gap_set_adv_parameters,
                 ResponsePacketType.gap_set_adv_data,
                 ResponsePacketType.gap_set_directed_connectable_mode,
@@ -587,7 +588,7 @@ class BGLib(object):
             ResponsePacketType.connection_update,
             ResponsePacketType.connection_version_update,
             ResponsePacketType.connection_channel_map_set,
-            ResponsePacketType.connection_features_get,
+            # ResponsePacketType.connection_features_get,
             # ResponsePacketType.attclient_find_by_type_value,
             # ResponsePacketType.attclient_read_by_group_type,
             # ResponsePacketType.attclient_read_by_type,
@@ -779,15 +780,15 @@ class BGLib(object):
                 'connection_handle': connection, 'handle': handle,
                 'flags': flags, 'client_flags': client_flags
             }
-        elif packet_type == EventPacketType.connection_status:
-            data = unpack('<BB6BBHHHB', payload[:16])
-            address = data[2:8]
-            response = {
-                'connection_handle': data[0], 'flags': data[1],
-                'address': address, 'address_type': data[8],
-                'conn_interval': data[9], 'timeout': data[10],
-                'latency': data[11], 'bonding': data[12]
-            }
+        # elif packet_type == EventPacketType.connection_status:
+            # data = unpack('<BB6BBHHHB', payload[:16])
+            # address = data[2:8]
+            # response = {
+                # 'connection_handle': data[0], 'flags': data[1],
+                # 'address': address, 'address_type': data[8],
+                # 'conn_interval': data[9], 'timeout': data[10],
+                # 'latency': data[11], 'bonding': data[12]
+            # }
         # elif packet_type == EventPacketType.connection_version_ind:
             # connection, vers_nr, comp_id, sub_vers_nr = unpack(
                 # '<BBHH', payload[:6]
@@ -913,7 +914,7 @@ class BGLib(object):
                 'bond': bond, 'keysize': keysize, 'mitm': mitm,
                 'keys': keys
             }
-        elif packet_type == EventPacketType.gap_scan_response:
+        elif packet_type == EventPacketType.le_gap_scap_response:
             data = unpack('<bB6BBBB', payload[:11])
             sender = bytearray(data[2:8])
             data_data = bytearray(payload[11:])

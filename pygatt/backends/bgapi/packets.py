@@ -270,12 +270,12 @@ class BGAPICommandPacketBuilder(object):
         return pack('<4BBB', 0, 2, 6, 0, peripheral_privacy, central_privacy)
 
     @staticmethod
-    def gap_set_mode(discover, connect):  # Deprecated XXX
+    def le_gap_set_mode(discover, connect):  # Deprecated XXX
         return pack('<4BBB', 0x20, 0x02, 0x03, 0x01, discover, connect)
 
     @staticmethod
-    def gap_discover(mode):
-        return pack('<4BB', 0, 1, 6, 2, mode)
+    def le_gap_discover(mode):
+        return pack('<4BB', 0x20, 1, 3, 2, mode)
 
     @staticmethod
     def gap_connect_direct(address, addr_type, conn_interval_min,
@@ -291,7 +291,7 @@ class BGAPICommandPacketBuilder(object):
                     conn_interval_min, conn_interval_max, timeout, latency)
 
     @staticmethod
-    def gap_end_procedure():
+    def le_gap_end_procedure():
         return pack('<4B', 0x20, 0, 3, 3)
 
     @staticmethod
@@ -306,8 +306,8 @@ class BGAPICommandPacketBuilder(object):
                     scan_duplicate_filtering)
 
     @staticmethod
-    def gap_set_scan_parameters(scan_interval, scan_window, active):
-        return pack('<4BHHB', 0, 5, 6, 7, scan_interval, scan_window, active)
+    def le_gap_set_scan_parameters(scan_interval, scan_window, active):
+        return pack('<4BHHB', 0x20, 5, 3, 6, scan_interval, scan_window, active)
 
     @staticmethod
     def gap_set_adv_parameters(adv_interval_min, adv_interval_max,
