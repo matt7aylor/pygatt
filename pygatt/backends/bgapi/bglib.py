@@ -215,9 +215,9 @@ EventPacketType = Enum('EventPacketType', [
 
     ### le-connection
     'le_connection_parameters',                    # XXX Partially done, need to check where it is used
-    'connection_disconnected',              # XXX
     # New events
-    # 'le_connection_opened'                # XXX new expectation on connect
+    'le_connection_opened'                # XXX new expectation on connect
+    'le_connection_closed'                # XXX new expectation on connect
     # 'le_connection_rssi'
     # 'le_connection_phy_status'
     # Old removed
@@ -384,11 +384,12 @@ EVENT_PACKET_MAPPING = {
     (0x0a, 1): EventPacketType.gatt_server_user_read_request,
     (0x0a, 3): EventPacketType.gatt_server_characteristic_status,
 
+    (0x08, 0): EventPacketType.le_connection_opened,
+    (0x08, 1): EventPacketType.le_connection_closed,
     (0x08, 2): EventPacketType.le_connection_parameters,
     # (3, 1): EventPacketType.connection_version_ind,
     # (3, 2): EventPacketType.connection_feature_ind,
     # (3, 3): EventPacketType.connection_raw_rx,
-    (3, 4): EventPacketType.connection_disconnected,
 
     # (4, 0): EventPacketType.attclient_indicated,
     (4, 1): EventPacketType.attclient_procedure_completed,
@@ -781,6 +782,21 @@ class BGLib(object):
                 'connection_handle': connection, 'handle': handle,
                 'flags': flags, 'client_flags': client_flags
             }
+        elif packet_type == EventPacketType.le_connection_closed:
+            reason, connection = unpack(
+                '<HB', payload[:3]
+            )
+            response = {
+                'connection_handle': connection, 'reason': reason
+            }
+        elif packet_type == EventPacketType.le_connection_opened:
+            data = unpack('<6BBBBBB', payload[:11])
+            address = data[0:6]
+            response = {
+                'address': address, 'address_type': data[7],
+                'master': data[8],'connection_handle': data[9],
+                'bonding': data[10], 'advertiser': data[11],
+            }
         elif packet_type == EventPacketType.le_connection_parameters:  # XXX Partially done (check where it is used)
             data = unpack('<BHHHBH', payload[:10])
             response = {
@@ -814,13 +830,6 @@ class BGLib(object):
             # response = {
                 # 'connection_handle': connection, 'data': data_data
             # }
-        elif packet_type == EventPacketType.connection_disconnected:
-            connection, reason = unpack(
-                '<BH', payload[:3]
-            )
-            response = {
-                'connection_handle': connection, 'reason': reason
-            }
         # elif packet_type == EventPacketType.attclient_indicated:
             # connection, attrhandle = unpack(
                 # '<BH', payload[:3]

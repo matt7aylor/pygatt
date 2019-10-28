@@ -161,9 +161,10 @@ class BGAPIBackend(BLEBackend):
                 self._ble_evt_attclient_attribute_value),
             EventPacketType.attclient_find_information_found: (
                 self._ble_evt_attclient_find_information_found),
+            EventPacketType.le_connection_opened: self._ble_evt_le_connection_opened,
             EventPacketType.le_connection_parameters: self._ble_evt_connection_status,
-            EventPacketType.connection_disconnected: (
-                self._ble_evt_connection_disconnected),
+            EventPacketType.le_connection_closed: (
+                self._ble_evt_le_connection_closed),
             EventPacketType.le_gap_scap_response: self._ble_evt_le_gap_scap_response,
             EventPacketType.sm_bond_status: self._ble_evt_sm_bond_status,
         }
@@ -462,28 +463,16 @@ class BGAPIBackend(BLEBackend):
 
         try:
             self.expect(ResponsePacketType.le_gap_connect)
-            _, packet = self.expect(EventPacketType.le_connection_parameters,
+            _, packet = self.expect(EventPacketType.le_connection_opened,
                                     timeout=timeout)
-            # TODO what do we do if the status isn't 'connected'? Retry?
-            # Raise an exception? Should also check the address matches the
-            # expected TODO i'm finding that when reconnecting to the same
-            # MAC, we geta conneciotn status of "disconnected" but that is
-            # picked up here as "connected", then we don't get anything
-            # else.
-            if self._connection_status_flag(
-                    packet['flags'],
-                    constants.connection_status_flag['connected']):
-                device = BGAPIBLEDevice(
-                    bgapi_address_to_hex(packet['address']),
-                    packet['connection_handle'],
-                    self)
-                if self._connection_status_flag(
-                        packet['flags'],
-                        constants.connection_status_flag['encrypted']):
-                    device.encrypted = True
-                self._connections[packet['connection_handle']] = device
-                log.info("Connected to %s", address)
-                return device
+            device = BGAPIBLEDevice(
+                bgapi_address_to_hex(packet['address']),
+                packet['connection_handle'],
+                self)
+            # TODO Handle le_connection_parameters to get encryption status
+            self._connections[packet['connection_handle']] = device
+            log.info("Connected to %s", address)
+            return device
         except ExpectedResponseTimeout:
             # If the connection doesn't occur because the device isn't there
             # then you should manually stop the command.
@@ -756,12 +745,36 @@ class BGAPIBackend(BLEBackend):
             self._characteristics[
                 args['connection_handle']][uuid] = new_char
 
-    def _ble_evt_connection_disconnected(self, args):
+    def _ble_evt_le_connection_closed(self, args):
         """
-        Handles the event for the termination of a connection.
+        Handles the event for connection closing
         """
-        self._connections.pop(args['connection_handle'], None)
+        connection_handle = args['connection_handle']
+        # Disconnected
+        self._connections.pop(connection_handle, None)
+        log.info("Removed device from _connections")
 
+    def _ble_evt_le_connection_opened(self, args):
+        """
+        Handles the event for reporting connection opened.
+
+        args -- dictionary containing
+                'address': , 'address_type': ,
+                'master': ,'connection_handle': ,
+                'bonding': , 'advertiser': ,
+        """
+        connection_handle = args['connection_handle']
+
+        log.info("Connection status: handle=0x%x, address=0x%s, "
+                 "address_type=0x%x, master=0x%x, bonding=0x%x, "
+                 "advertiser=0x%x",
+                 connection_handle,
+                 hexlify(bytearray(args['address'])),
+                 args['address_type'],
+                 args['master'],
+                 args['bonding'],
+                 args['advertiser'],
+                 )
     def _ble_evt_connection_status(self, args):
         """
         Handles the event for reporting connection status.
