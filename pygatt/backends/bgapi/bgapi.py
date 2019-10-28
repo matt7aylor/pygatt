@@ -761,7 +761,8 @@ class BGAPIBackend(BLEBackend):
                 scan resonse data list ('data')
         """
         # Parse packet
-        packet_type = constants.scan_response_packet_type[args['packet_type']]
+        packet_type = "FIXME"  # TODO New packet type form needs binary proccesing
+        # packet_type = constants.scan_response_packet_type[args['packet_type']]
         address = bgapi_address_to_hex(args['sender'])
         name, data_dict = self._scan_rsp_data(args['data'])
 
