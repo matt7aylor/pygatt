@@ -44,7 +44,7 @@ class BGAPIBLEDevice(BLEDevice):
         self._backend.expect(ResponsePacketType.sm_encrypt_start)
 
         packet_type, response = self._backend.expect_any(
-            [EventPacketType.connection_status,
+            [EventPacketType.le_connection_parameters,
              EventPacketType.sm_bonding_fail])
         if packet_type == EventPacketType.sm_bonding_fail:
             raise BGAPIError("Bonding failed")

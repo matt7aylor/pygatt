@@ -214,7 +214,7 @@ EventPacketType = Enum('EventPacketType', [
     # 'gatt_server_execute_write_completed'
 
     ### le-connection
-    # 'connection_status',                    # XXX
+    'le_connection_parameters',                    # XXX Partially done, need to check where it is used
     'connection_disconnected',              # XXX
     # New events
     # 'le_connection_opened'                # XXX new expectation on connect
@@ -384,7 +384,7 @@ EVENT_PACKET_MAPPING = {
     (0x0a, 1): EventPacketType.gatt_server_user_read_request,
     (0x0a, 3): EventPacketType.gatt_server_characteristic_status,
 
-    # (3, 0): EventPacketType.connection_status,
+    (0x08, 2): EventPacketType.le_connection_parameters,
     # (3, 1): EventPacketType.connection_version_ind,
     # (3, 2): EventPacketType.connection_feature_ind,
     # (3, 3): EventPacketType.connection_raw_rx,
@@ -780,15 +780,15 @@ class BGLib(object):
                 'connection_handle': connection, 'handle': handle,
                 'flags': flags, 'client_flags': client_flags
             }
-        # elif packet_type == EventPacketType.connection_status:
-            # data = unpack('<BB6BBHHHB', payload[:16])
-            # address = data[2:8]
-            # response = {
-                # 'connection_handle': data[0], 'flags': data[1],
-                # 'address': address, 'address_type': data[8],
-                # 'conn_interval': data[9], 'timeout': data[10],
-                # 'latency': data[11], 'bonding': data[12]
-            # }
+        elif packet_type == EventPacketType.le_connection_parameters:  # XXX Partially done (check where it is used)
+            data = unpack('<BHHHBH', payload[:10])
+            response = {
+                'connection_handle': data[0], 'flags': None,
+                'address': None, 'address_type': None,
+                'conn_interval': data[1], 'timeout': data[3],
+                'latency': data[2], 'bonding': None,
+                'security_mode': data[4], 'txsize': data[5],
+            }
         # elif packet_type == EventPacketType.connection_version_ind:
             # connection, vers_nr, comp_id, sub_vers_nr = unpack(
                 # '<BBHH', payload[:6]

@@ -120,7 +120,7 @@ class BGAPIBackend(BLEBackend):
                 self._ble_evt_attclient_attribute_value),
             EventPacketType.attclient_find_information_found: (
                 self._ble_evt_attclient_find_information_found),
-            EventPacketType.connection_status: self._ble_evt_connection_status,
+            EventPacketType.le_connection_parameters: self._ble_evt_connection_status,
             EventPacketType.connection_disconnected: (
                 self._ble_evt_connection_disconnected),
             EventPacketType.le_gap_scap_response: self._ble_evt_le_gap_scap_response,
@@ -421,7 +421,7 @@ class BGAPIBackend(BLEBackend):
 
         try:
             self.expect(ResponsePacketType.gap_connect_direct)
-            _, packet = self.expect(EventPacketType.connection_status,
+            _, packet = self.expect(EventPacketType.le_connection_parameters,
                                     timeout=timeout)
             # TODO what do we do if the status isn't 'connected'? Retry?
             # Raise an exception? Should also check the address matches the
