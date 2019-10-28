@@ -272,7 +272,7 @@ class BGAPIBackend(BLEBackend):
         log.info("Disabling advertising")
         self.send_command(
             CommandBuilder.le_gap_set_mode(
-                constants.le_gap_discoverable_mode['non_discoverable'],
+                constants.gap_discoverable_mode['non_discoverable'],
                 constants.gap_connectable_mode['non_connectable']))
         self.expect(ResponsePacketType.le_gap_set_mode)
 
@@ -316,7 +316,7 @@ class BGAPIBackend(BLEBackend):
             self.expect(ResponsePacketType.sm_delete_bonding)
 
     def scan(self, timeout=10, scan_interval=75, scan_window=50, active=True,
-             discover_mode=constants.le_gap_discover_mode['observation'],
+             discover_mode=constants.gap_discover_mode['observation'],
              scan_cb=None, **kwargs):
         """
         Perform a scan to discover BLE devices.
