@@ -136,8 +136,8 @@ class BGAPICommandPacketBuilder(object):
         return pack('<4BBB', 0, 2, 2, 4, connection, att_error)
 
     @staticmethod
-    def connection_disconnect(connection):
-        return pack('<4BB', 0, 1, 3, 0, connection)
+    def le_connection_close(connection):
+        return pack('<4BB', 0x20, 1, 0x08, 0x04, connection)
 
     @staticmethod
     def connection_get_rssi(connection):

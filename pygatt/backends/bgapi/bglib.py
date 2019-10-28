@@ -143,7 +143,7 @@ ResponsePacketType = Enum('ResponsePacketType', [
     # 'hardware_timer_comparator',
 
     ### le_connection ### Similar to connection XXX
-    'connection_disconnect',        # XXX
+    'le_connection_close',
     'connection_get_rssi',          # XXX
     'connection_update',
     'connection_version_update',
@@ -303,7 +303,7 @@ RESPONSE_PACKET_MAPPING = {
     (2, 3): ResponsePacketType.attributes_user_read_response,
     (2, 4): ResponsePacketType.attributes_user_write_response,
 
-    (3, 0): ResponsePacketType.connection_disconnect,
+    (0x08, 0x04): ResponsePacketType.le_connection_close,
     #(3, 1): ResponsePacketType.connection_get_rssi,
     # (3, 2): ResponsePacketType.connection_update,
     #(3, 3): ResponsePacketType.connection_version_update,
@@ -586,7 +586,7 @@ class BGLib(object):
                 'value': value_data
             }
         elif packet_type in [
-            ResponsePacketType.connection_disconnect,
+            ResponsePacketType.le_connection_close,
             ResponsePacketType.connection_update,
             ResponsePacketType.connection_version_update,
             ResponsePacketType.connection_channel_map_set,

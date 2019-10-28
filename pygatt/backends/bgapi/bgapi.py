@@ -462,7 +462,7 @@ class BGAPIBackend(BLEBackend):
                 address_bytes, addr_type, phy))
 
         try:
-            self.expect(ResponsePacketType.le_gap_connect)
+            _, connect_resp = self.expect(ResponsePacketType.le_gap_connect)
             _, packet = self.expect(EventPacketType.le_connection_opened,
                                     timeout=timeout)
             device = BGAPIBLEDevice(
@@ -480,7 +480,8 @@ class BGAPIBackend(BLEBackend):
             # If we never get the connection status it is likely that it
             # didn't occur because the device isn't there. If that is true
             # then we have to manually stop the command.
-            self._end_procedure()
+            self.send_command(CommandBuilder.le_connection_close(connect_resp['connection_handle']))
+            self.expect(ResponsePacketType.le_connection_close)
             exc = NotConnectedError()
             exc.__cause__ = None
             raise exc
