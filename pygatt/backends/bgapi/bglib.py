@@ -97,16 +97,16 @@ ResponsePacketType = Enum('ResponsePacketType', [
     'attclient_execute_write',      # XXX
 
     # New commands
-    # 'gatt_discover_characteristics'
-    # 'gatt_discover_characteristics_by_uuid'
-    # 'gatt_discover_descriptors'
-    # 'gatt_discover_primary_services'
-    # 'gatt_discover_primary_services_by_uuid'
-    # 'gatt_discover_descriptors'
-    # 'gatt_discover_descriptors'
-    # 'gatt_discover_descriptors'
-    # 'gatt_discover_descriptors'
-    # 'gatt_discover_descriptors'
+    # 'gatt_discover_characteristics',
+    # 'gatt_discover_characteristics_by_uuid',
+    # 'gatt_discover_descriptors',
+    # 'gatt_discover_primary_services',
+    # 'gatt_discover_primary_services_by_uuid',
+    # 'gatt_discover_descriptors',
+    # 'gatt_discover_descriptors',
+    # 'gatt_discover_descriptors',
+    # 'gatt_discover_descriptors',
+    # 'gatt_discover_descriptors',
 
     # Old removed commands
     # 'attclient_find_by_type_value',
@@ -190,10 +190,10 @@ EventPacketType = Enum('EventPacketType', [
     ### system ###
     'system_boot',
     # New events
-    # 'system_external_signal'
-    # 'system_awake'
-    # 'system_hardware_error'
-    # 'system_error'
+    # 'system_external_signal',
+    # 'system_awake',
+    # 'system_hardware_error',
+    # 'system_error',
 
     # Old removed
     # 'system_debug',
@@ -210,16 +210,16 @@ EventPacketType = Enum('EventPacketType', [
     'gatt_server_user_read_request',
     'gatt_server_characteristic_status',
     # New events
-    # 'gatt_server_user_write_request'
-    # 'gatt_server_execute_write_completed'
+    # 'gatt_server_user_write_request',
+    # 'gatt_server_execute_write_completed',
 
     ### le-connection
     'le_connection_parameters',                    # XXX Partially done, need to check where it is used
     # New events
-    'le_connection_opened'                # XXX new expectation on connect
-    'le_connection_closed'                # XXX new expectation on connect
-    # 'le_connection_rssi'
-    # 'le_connection_phy_status'
+    'le_connection_opened',                # XXX new expectation on connect
+    'le_connection_closed',                # XXX new expectation on disconnect
+    # 'le_connection_rssi',
+    # 'le_connection_phy_status',
     # Old removed
     # 'connection_version_ind',
     # 'connection_feature_ind',
@@ -231,11 +231,11 @@ EventPacketType = Enum('EventPacketType', [
     'attclient_find_information_found',     # XXX
     'attclient_attribute_value',            # XXX
     # New events
-    # 'gatt_mtu_exchanged'
-    # 'gatt_characteristic'
-    # 'gatt_descriptor'
-    # 'gatt_characteristic_value'
-    # 'gatt_descriptor_value'
+    # 'gatt_mtu_exchanged',
+    # 'gatt_characteristic',
+    # 'gatt_descriptor',
+    # 'gatt_characteristic_value',
+    # 'gatt_descriptor_value',
     # Old removed
     # 'attclient_indicated',
     # 'attclient_read_multiple_response',
@@ -247,20 +247,20 @@ EventPacketType = Enum('EventPacketType', [
     'sm_bonding_fail',                      # XXX
     'sm_bond_status',                       # XXX
     # New events
-    # 'sm_confirm_passkey'
-    # 'sm_bonded'                           # XXX
-    # 'sm_list_bonding_entry'
-    # 'sm_list_all_bondings_complete'
-    # 'sm_confirm_bonding'
+    # 'sm_confirm_passkey',
+    # 'sm_bonded',                           # XXX
+    # 'sm_list_bonding_entry',
+    # 'sm_list_all_bondings_complete',
+    # 'sm_confirm_bonding',
     # Old removed
     # 'sm_smp_data',
 
     ### le-gap ###
     'le_gap_scap_response',                    # XXX
     # New events
-    # 'le_gap_adv_timeout'
-    # 'le_gap_scan_request'
-    # 'le_gap_extended_scan_response'
+    # 'le_gap_adv_timeout',
+    # 'le_gap_scan_request',
+    # 'le_gap_extended_scan_response',
     # Old removed
     # 'gap_mode_changed',
 
