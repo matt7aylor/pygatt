@@ -60,6 +60,46 @@ def bgapi_address_to_hex(address):
         list(reversed(address)))).upper().decode('ascii')
     return ':'.join(''.join(pair) for pair in zip(*[iter(address)] * 2))
 
+def bgapi_scan_response_packet_type(packet_type):
+    """
+    Processes the packet_type byte according to the following:
+    Bits 0..2: advertising packet type
+     - 000: Connectable scannable undirected advertising
+     - 001: Connectable undirected advertising
+     - 010: Scannable undirected advertising
+     - 011: Non-connectable non-scannable undirected advertising
+     - 100: Scan Response. Note: this is received only if the device is in active scan mode.
+    Bits 3..4: Reserved for future
+    Bits 5..6: data completeness
+     - 00: Complete
+     - 01: Incomplete, more data to come in new events
+     - 10: Incomplete, data truncated, no more to come
+    Bit 7: legacy or extended advertising
+     - 0: Legacy advertising PDUs used
+     - 1: Extended advertising PDUs used
+    """
+    adv_packet_types = {
+            0: "connectable_scannable_undirected_advertising",
+            1: "connectable_undirected_advertising",
+            2: "scannable_undirected_advertising",
+            3: "non-connectable_non-scannable_undirected_advertising",
+            4: "scan_response_active"
+            }
+    adv_complete_types = {
+            0: "complete",
+            1: "incomplete_more_to_come",
+            2: "incomplete_truncated"
+            }
+    legacy_extd = {
+            0: "legacy",
+            1: "extended"
+            }
+
+    adv_type = adv_packet_types[(packet_type & 0b00000111)]
+    adv_complete = adv_complete_types[((packet_type >> 5) & 0b11)]
+    adv_ver = legacy_extd[(packet_type >> 7)]
+
+    return adv_type + '_' + adv_complete + '_' + adv_ver
 
 class AdvertisingAndScanInfo(object):
     """
@@ -761,7 +801,7 @@ class BGAPIBackend(BLEBackend):
                 scan resonse data list ('data')
         """
         # Parse packet
-        packet_type = "FIXME"  # TODO New packet type form needs binary proccesing
+        packet_type = bgapi_scan_response_packet_type(args['packet_type'])  # TODO New packet type form needs binary proccesing
         # packet_type = constants.scan_response_packet_type[args['packet_type']]
         address = bgapi_address_to_hex(args['sender'])
         name, data_dict = self._scan_rsp_data(args['data'])
