@@ -278,9 +278,8 @@ class BGAPICommandPacketBuilder(object):
         return pack('<4BB', 0x20, 1, 3, 2, mode)
 
     @staticmethod
-    def gap_connect_direct(address, addr_type, conn_interval_min,
-                           conn_interval_max, timeout, latency):
-        return pack('<4B6BBHHHH', 0, 15, 6, 3,
+    def le_gap_connect(address, addr_type, phy):
+        return pack('<4B6BBB', 0x20, 8, 3, 0x1a,
                     address[-1],
                     address[-2],
                     address[-3],
@@ -288,7 +287,7 @@ class BGAPICommandPacketBuilder(object):
                     address[-5],
                     address[-6],
                     addr_type,
-                    conn_interval_min, conn_interval_max, timeout, latency)
+                    phy)
 
     @staticmethod
     def le_gap_end_procedure():

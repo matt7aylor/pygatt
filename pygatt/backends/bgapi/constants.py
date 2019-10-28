@@ -1,6 +1,8 @@
 ble_address_type = {
     'gap_address_type_public': 0,
-    'gap_address_type_random': 1
+    'gap_address_type_random': 1,
+    'gap_address_type_public_identity': 2,
+    'gap_address_type_random_identity': 3,
 }
 gap_discoverable_mode = {
     'non_discoverable': 0x00,
@@ -21,6 +23,11 @@ gap_discover_mode = {
     'generic': 0x01,
     'observation': 0x02,
 }
+le_gap_phy_type = {
+        'le_gap_phy_1m': 1,
+        'le_gap_phy_2m': 2,
+        'le_gap_phy_coded': 4,
+        }
 bonding = {  # create bonding if devices not already bonded
     'do_not_create_bonding': 0x00,
     'create_bonding': 0x01,

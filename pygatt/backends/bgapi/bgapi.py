@@ -61,6 +61,7 @@ def bgapi_address_to_hex(address):
     return ':'.join(''.join(pair) for pair in zip(*[iter(address)] * 2))
 
 def bgapi_scan_response_packet_type(packet_type):
+    # TODO increase speed, move constants out of function, incomplete packet handling
     """
     Processes the packet_type byte according to the following:
     Bits 0..2: advertising packet type
@@ -454,13 +455,13 @@ class BGAPIBackend(BLEBackend):
         else:
             addr_type = constants.ble_address_type['gap_address_type_random']
 
+        phy = constants.le_gap_phy_type['le_gap_phy_1m']
         self.send_command(
-            CommandBuilder.gap_connect_direct(
-                address_bytes, addr_type, interval_min, interval_max,
-                supervision_timeout, latency))
+            CommandBuilder.le_gap_connect(
+                address_bytes, addr_type, phy))
 
         try:
-            self.expect(ResponsePacketType.gap_connect_direct)
+            self.expect(ResponsePacketType.le_gap_connect)
             _, packet = self.expect(EventPacketType.le_connection_parameters,
                                     timeout=timeout)
             # TODO what do we do if the status isn't 'connected'? Retry?
@@ -801,7 +802,7 @@ class BGAPIBackend(BLEBackend):
                 scan resonse data list ('data')
         """
         # Parse packet
-        packet_type = bgapi_scan_response_packet_type(args['packet_type'])  # TODO New packet type form needs binary proccesing
+        packet_type = bgapi_scan_response_packet_type(args['packet_type'])
         # packet_type = constants.scan_response_packet_type[args['packet_type']]
         address = bgapi_address_to_hex(args['sender'])
         name, data_dict = self._scan_rsp_data(args['data'])

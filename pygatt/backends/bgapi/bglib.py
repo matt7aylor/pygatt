@@ -158,7 +158,7 @@ ResponsePacketType = Enum('ResponsePacketType', [
     'le_gap_end_procedure',
     'le_gap_set_mode',                 # XXX DEPRECATED
     'le_gap_discover',                 # XXX DEPRECATED
-    'gap_connect_direct',           # XXX
+    'le_gap_connect',           # XXX
     'gap_set_privacy_flags',
     'gap_connect_selective',
     'gap_set_filtering',
@@ -168,7 +168,7 @@ ResponsePacketType = Enum('ResponsePacketType', [
 
     ### smm ### Similar to original XXX
     'sm_encrypt_start',             # XXX
-    'sm_set_bondable_mode',         # XXX
+    'sm_set_bondable_mode',         # XXX Done?
     'sm_delete_bonding',            # XXX
     'sm_set_parameters',
     'sm_passkey_entry',
@@ -336,7 +336,7 @@ RESPONSE_PACKET_MAPPING = {
     (6, 0): ResponsePacketType.gap_set_privacy_flags,
     (3, 1): ResponsePacketType.le_gap_set_mode,
     (3, 2): ResponsePacketType.le_gap_discover,
-    (6, 3): ResponsePacketType.gap_connect_direct,
+    (3, 0x1a): ResponsePacketType.le_gap_connect,
     (3, 3): ResponsePacketType.le_gap_end_procedure,
     (6, 5): ResponsePacketType.gap_connect_selective,
     (6, 6): ResponsePacketType.gap_set_filtering,
@@ -528,6 +528,7 @@ class BGLib(object):
                 # ResponsePacketType.attclient_indicate_confirm,
                 ResponsePacketType.sm_delete_bonding,
                 ResponsePacketType.sm_passkey_entry,
+                ResponsePacketType.sm_set_bondable_mode,
                 ResponsePacketType.le_gap_set_mode,
                 ResponsePacketType.le_gap_discover,
                 ResponsePacketType.le_gap_end_procedure,
@@ -644,7 +645,7 @@ class BGLib(object):
             response = {
                 'bonds': bonds
             }
-        elif packet_type == ResponsePacketType.gap_connect_direct:
+        elif packet_type == ResponsePacketType.le_gap_connect:
             result, connection_handle = unpack(
                 '<HB', payload[:3]
             )
