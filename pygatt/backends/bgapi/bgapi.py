@@ -111,6 +111,8 @@ class AdvertisingAndScanInfo(object):
         self.name = ""
         self.address = ""
         self.rssi = None
+        self.address_type = None
+        self.bond = None
         self.packet_data = {
             # scan_response_packet_type[xxx]: data_dictionary,
         }
@@ -162,10 +164,10 @@ class BGAPIBackend(BLEBackend):
             EventPacketType.attclient_find_information_found: (
                 self._ble_evt_attclient_find_information_found),
             EventPacketType.le_connection_opened: self._ble_evt_le_connection_opened,
-            EventPacketType.le_connection_parameters: self._ble_evt_connection_status,
+            EventPacketType.le_connection_parameters: self._ble_evt_connection_parameters,
             EventPacketType.le_connection_closed: (
                 self._ble_evt_le_connection_closed),
-            EventPacketType.le_gap_scap_response: self._ble_evt_le_gap_scap_response,
+            EventPacketType.le_gap_scan_response: self._ble_evt_le_gap_scan_response,
             EventPacketType.sm_bond_status: self._ble_evt_sm_bond_status,
         }
 
@@ -398,7 +400,7 @@ class BGAPIBackend(BLEBackend):
 
         while self._evt.is_set():
             try:
-                self.expect(EventPacketType.le_gap_scap_response,
+                self.expect(EventPacketType.le_gap_scan_response,
                             timeout=timeout)
             except ExpectedResponseTimeout:
                 pass
@@ -415,6 +417,8 @@ class BGAPIBackend(BLEBackend):
                 'address': address,
                 'name': info.name,
                 'rssi': info.rssi,
+                'address_type': info.address_type,
+                'bond': info.bond,
                 'packet_data': info.packet_data
             })
         log.info("Discovered %d devices: %s", len(devices), devices)
@@ -654,6 +658,7 @@ class BGAPIBackend(BLEBackend):
 
             try:
                 packet_type, response = self._lib.decode_packet(packet)
+                print(packet_type, response)  # XXX DEBUG XXX
             except bglib.UnknownMessageType:
                 log.warn("Ignoring message decode failure", exc_info=True)
                 continue
@@ -776,35 +781,26 @@ class BGAPIBackend(BLEBackend):
                  args['bonding'],
                  args['advertiser'],
                  )
-    def _ble_evt_connection_status(self, args):
+    def _ble_evt_connection_parameters(self, args):
         """
-        Handles the event for reporting connection status.
+        Handles the event for reporting connection parameters.
 
-        args -- dictionary containing the connection status flags ('flags'),
-            device address ('address'), device address type ('address_type'),
-            connection interval ('conn_interval'), connection timeout
-            (timeout'), device latency ('latency'), device bond handle
-            ('bonding')
         """
         connection_handle = args['connection_handle']
-        if not self._connection_status_flag(
-                args['flags'],
-                constants.connection_status_flag['connected']):
-            # Disconnected
-            self._connections.pop(connection_handle, None)
 
-        log.info("Connection status: handle=0x%x, flags=%s, address=0x%s, "
+        log.info("Connection status: handle=0x%x, "
                  "connection interval=%fms, timeout=%d, "
-                 "latency=%d intervals, bonding=0x%x",
+                 "latency=%d, security_mode=0x%x"
+                 "txsize=%d",
                  connection_handle,
-                 args['flags'],
-                 hexlify(bytearray(args['address'])),
-                 args['conn_interval'] * 1.25,
-                 args['timeout'] * 10,
+                 args['conn_interval'],
+                 args['timeout'],
                  args['latency'],
-                 args['bonding'])
+                 args['security_mode'],
+                 args['txsize'],
+                 )
 
-    def _ble_evt_le_gap_scap_response(self, args):
+    def _ble_evt_le_gap_scan_response(self, args):
         """
         Handles the event for reporting the contents of an advertising or scan
         response packet.
@@ -820,7 +816,7 @@ class BGAPIBackend(BLEBackend):
         # packet_type = constants.scan_response_packet_type[args['packet_type']]
         address = bgapi_address_to_hex(args['sender'])
         name, data_dict = self._scan_rsp_data(args['data'])
-
+        address_type = args['address_type']
         # Store device information
         if address not in self._devices_discovered:
             self._devices_discovered[address] = AdvertisingAndScanInfo()
@@ -829,6 +825,11 @@ class BGAPIBackend(BLEBackend):
             dev.name = name
         if dev.address == "":
             dev.address = address
+        if dev.address_type is None:
+            if address_type != 255:
+                dev.address_type = args['address_type']
+        if dev.bond is None:
+            dev.bond = args['bond']
         if (packet_type not in dev.packet_data or
                 len(dev.packet_data[packet_type]) < len(data_dict)):
             dev.packet_data[packet_type] = data_dict

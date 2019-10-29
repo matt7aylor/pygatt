@@ -36,7 +36,7 @@ bondable = {
     'no': 0x00,
     'yes': 0x01,
 }
-connection_status_flag = {
+connection_status_flag = {  # XXX remove
     'connected': 0x01,
     'encrypted': 0x02,
     'completed': 0x04,

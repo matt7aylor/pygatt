@@ -218,8 +218,8 @@ EventPacketType = Enum('EventPacketType', [
     # New events
     'le_connection_opened',                # XXX new expectation on connect
     'le_connection_closed',                # XXX new expectation on disconnect
-    # 'le_connection_rssi',
-    # 'le_connection_phy_status',
+    'le_connection_rssi',
+    'le_connection_phy_status',
     # Old removed
     # 'connection_version_ind',
     # 'connection_feature_ind',
@@ -231,7 +231,7 @@ EventPacketType = Enum('EventPacketType', [
     'attclient_find_information_found',     # XXX
     'attclient_attribute_value',            # XXX
     # New events
-    # 'gatt_mtu_exchanged',
+    'gatt_mtu_exchanged',                   # XXX What if MTU changes?
     # 'gatt_characteristic',
     # 'gatt_descriptor',
     # 'gatt_characteristic_value',
@@ -256,7 +256,7 @@ EventPacketType = Enum('EventPacketType', [
     # 'sm_smp_data',
 
     ### le-gap ###
-    'le_gap_scap_response',                    # XXX
+    'le_gap_scan_response',                    # XXX
     # New events
     # 'le_gap_adv_timeout',
     # 'le_gap_scan_request',
@@ -387,13 +387,16 @@ EVENT_PACKET_MAPPING = {
     (0x08, 0): EventPacketType.le_connection_opened,
     (0x08, 1): EventPacketType.le_connection_closed,
     (0x08, 2): EventPacketType.le_connection_parameters,
+    (0x08, 3): EventPacketType.le_connection_rssi,
+    (0x08, 4): EventPacketType.le_connection_phy_status,
     # (3, 1): EventPacketType.connection_version_ind,
     # (3, 2): EventPacketType.connection_feature_ind,
     # (3, 3): EventPacketType.connection_raw_rx,
 
+    (9, 0): EventPacketType.gatt_mtu_exchanged,
+    (9, 1): EventPacketType.gatt_service,
     # (4, 0): EventPacketType.attclient_indicated,
     (4, 1): EventPacketType.attclient_procedure_completed,
-    (9, 1): EventPacketType.gatt_service,
     # (4, 3): EventPacketType.attclient_attribute_found,
     (4, 4): EventPacketType.attclient_find_information_found,
     (4, 5): EventPacketType.attclient_attribute_value,
@@ -405,7 +408,7 @@ EVENT_PACKET_MAPPING = {
     (0x0f, 1): EventPacketType.sm_passkey_request,
     (5, 4): EventPacketType.sm_bond_status,
 
-    (3, 0): EventPacketType.le_gap_scap_response,
+    (3, 0): EventPacketType.le_gap_scan_response,
     # (6, 1): EventPacketType.gap_mode_changed,
 
     # (7, 0): EventPacketType.hardware_io_port_status,
@@ -434,6 +437,7 @@ class BGLib(object):
         ser -- The serial.Serial object to write to.
         packet -- The packet to write.
         """
+        print("Sending:", packet)  # XXX DEBUG XXX
         ser.write(packet)
 
     def parse_byte(self, new_byte):
@@ -793,18 +797,31 @@ class BGLib(object):
             data = unpack('<6BBBBBB', payload[:11])
             address = data[0:6]
             response = {
-                'address': address, 'address_type': data[7],
-                'master': data[8],'connection_handle': data[9],
-                'bonding': data[10], 'advertiser': data[11],
+                'address': address, 'address_type': data[6],
+                'master': data[7],'connection_handle': data[8],
+                'bonding': data[9], 'advertiser': data[10],
             }
-        elif packet_type == EventPacketType.le_connection_parameters:  # XXX Partially done (check where it is used)
+        elif packet_type == EventPacketType.le_connection_parameters:
             data = unpack('<BHHHBH', payload[:10])
             response = {
-                'connection_handle': data[0], 'flags': None,
-                'address': None, 'address_type': None,
+                'connection_handle': data[0],
                 'conn_interval': data[1], 'timeout': data[3],
-                'latency': data[2], 'bonding': None,
+                'latency': data[2],
                 'security_mode': data[4], 'txsize': data[5],
+            }
+        elif packet_type == EventPacketType.le_connection_rssi:
+            status, rssi = unpack(
+                '<Bb', payload[:2]
+            )
+            response = {
+                'status': status, 'rssi': rssi
+            }
+        elif packet_type == EventPacketType.le_connection_phy_status:
+            connection, phy = unpack(
+                '<BB', payload[:2]
+            )
+            response = {
+                'connection_handle': connection, 'phy': phy
             }
         # elif packet_type == EventPacketType.connection_version_ind:
             # connection, vers_nr, comp_id, sub_vers_nr = unpack(
@@ -844,6 +861,13 @@ class BGLib(object):
             response = {
                 'connection_handle': connection, 'result': result,
                 'chrhandle': chrhandle
+            }
+        elif packet_type == EventPacketType.gatt_mtu_exchanged:
+            connection, mtu = unpack(
+                '<BH', payload[:3]
+            )
+            response = {
+                'connection_handle': connection, 'mtu': mtu,
             }
         elif packet_type == EventPacketType.gatt_service:
             connection, service, uuid_len = unpack(
@@ -924,7 +948,7 @@ class BGLib(object):
                 'bond': bond, 'keysize': keysize, 'mitm': mitm,
                 'keys': keys
             }
-        elif packet_type == EventPacketType.le_gap_scap_response:
+        elif packet_type == EventPacketType.le_gap_scan_response:
             data = unpack('<bB6BBBB', payload[:11])
             sender = bytearray(data[2:8])
             data_data = bytearray(payload[11:])

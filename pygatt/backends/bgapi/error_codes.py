@@ -10,6 +10,9 @@ class ErrorCode(Enum):
 return_codes = {
     0: "Success",
     # BGAPI errors
+    0x0101: "Invalid GATT connection handle",
+    0x0102: "Waiting response from GATT server to previous procedure",
+    0x0103: "GATT connection is closed due procedure timeout",
     0x0180: "Invalid parameter",
     0x0181: "Device in wrong state",
     0x0182: "Out of memory",
