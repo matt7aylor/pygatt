@@ -200,10 +200,7 @@ class BGAPIBLEDevice(BLEDevice):
     @connection_required
     def disconnect(self):
         log.debug("Disconnecting from %s", self._address)
-        self._backend.send_command(
-            CommandBuilder.le_connection_close(self._handle))
-
-        self._backend.expect(ResponsePacketType.le_connection_close)
+        self._backend.disconnect(self._handle)
         log.info("Disconnected from %s", self._address)
         self._handle = None
 

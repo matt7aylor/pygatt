@@ -490,6 +490,17 @@ class BGAPIBackend(BLEBackend):
             exc.__cause__ = None
             raise exc
 
+    def disconnect(self, handle):
+        self.send_command(
+            CommandBuilder.le_connection_close(handle))
+
+        self.expect(ResponsePacketType.le_connection_close)
+        try:
+            self.expect(EventPacketType.le_connection_closed, timeout=2)
+        except ExpectedResponseTimeout:
+            log.info("Didn't get a connection_closed, already disconnected?")
+
+
     def discover_characteristics(self, connection_handle):
         att_handle_start = 0x0001  # first valid handle
         att_handle_end = 0xFFFF  # last valid handle
