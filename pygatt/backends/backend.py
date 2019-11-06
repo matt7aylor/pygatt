@@ -60,6 +60,33 @@ class BLEBackend(object):
     def clear_bond(self, address=None):
         raise NotImplementedError()
 
+class Service(object):
+    """
+    A GATT service, including its handle and associated characteristics.
+    Only valid for the lifespan of a BLE connection.
+    """
+    def __init__(self, uuid, handle):
+        """
+        Sets the Service uuid and handle.
+
+        handle - a bytearray
+        """
+        self.uuid = uuid
+        self.handle = handle
+        self.characteristics = { # TODO: handle or Characteristic Class?
+            # uuid_string: handle
+        }
+
+
+    def add_characteristic(self, uuid, handle):
+        """
+        Add a characteristic descriptor to the dictionary of descriptors.
+        """
+        self.characteristics[uuid] = handle
+
+    def __str__(self):
+        return "<%s uuid=%s handle=%d>" % (self.__class__.__name__,
+                                           self.uuid, self.handle)
 
 class Characteristic(object):
     """

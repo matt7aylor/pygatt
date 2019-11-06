@@ -416,3 +416,14 @@ class BGAPICommandPacketBuilder(object):
     # def test_debug(data):
         # return pack('<4BB%dB' % len(data), 0, 1 + len(data), 8, 5,
                     # len(data), *data)
+    @staticmethod
+    def gatt_discover_primary_services(connection):
+        return pack('<4BB', 0x20, 0x01, 0x09, 0x01, connection)
+
+    @staticmethod
+    def gatt_discover_characteristics(connection, service_handle):
+        return pack('<4BBI', 0x20, 0x05, 0x09, 0x03, connection, service_handle)
+
+    @staticmethod
+    def gatt_discover_descriptors(connection, characteristic):
+        return pack('<4BBH', 0x20, 0x03, 0x09, 0x06, connection, characteristic)

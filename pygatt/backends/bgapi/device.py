@@ -209,3 +209,24 @@ class BGAPIBLEDevice(BLEDevice):
         self._characteristics = self._backend.discover_characteristics(
             self._handle)
         return self._characteristics
+
+    @connection_required
+    def discover_services(self):
+        self._services = self._backend.discover_services(
+            self._handle)
+        return self._services
+
+    @connection_required
+    def discover_descriptors(self):
+        self._descriptors = self._backend.discover_descriptors(
+            self._handle)
+        return self._descriptors
+
+    def discover_all(self):
+        if "_services" not in dir(self):
+            self.discover_services()
+        if "_characteristics" not in dir(self) or \
+                "_characteristics" in dir(self) and len(self._characteristics) == 0:
+            self.discover_characteristics()
+            self.discover_descriptors()
+        return self

@@ -17,7 +17,7 @@ from enum import Enum
 from collections import defaultdict
 
 from pygatt.exceptions import NotConnectedError
-from pygatt.backends import BLEBackend, Characteristic, BLEAddressType
+from pygatt.backends import BLEBackend, Characteristic, BLEAddressType, Service
 from pygatt.util import uuid16_to_uuid
 
 from . import bglib, constants
@@ -153,8 +153,12 @@ class BGAPIBackend(BLEBackend):
         }
         self._characteristics = defaultdict(dict)
         self._connections = {}
+        self._services = defaultdict(dict)
+        self._descriptors = defaultdict(dict)
 
         self._current_characteristic = None  # used in char/descriptor discovery
+        self._current_service = None  # used in service discovery
+
         self._packet_handlers = {
             ResponsePacketType.sm_get_bonds: self._ble_rsp_sm_get_bonds,
             ResponsePacketType.system_get_bt_address: (
@@ -169,6 +173,10 @@ class BGAPIBackend(BLEBackend):
                 self._ble_evt_le_connection_closed),
             EventPacketType.le_gap_scan_response: self._ble_evt_le_gap_scan_response,
             EventPacketType.sm_bond_status: self._ble_evt_sm_bond_status,
+            #
+            EventPacketType.gatt_service: self._ble_evt_gatt_service,
+            EventPacketType.gatt_characteristic: self._ble_evt_gatt_characteristic,
+            EventPacketType.gatt_descriptor: self._ble_evt_gatt_descriptor
         }
 
         log.info("Initialized new BGAPI backend")
@@ -500,32 +508,125 @@ class BGAPIBackend(BLEBackend):
         except ExpectedResponseTimeout:
             log.info("Didn't get a connection_closed, already disconnected?")
 
-
-    def discover_characteristics(self, connection_handle):
+    def discover_services(self, connection_handle):
         att_handle_start = 0x0001  # first valid handle
         att_handle_end = 0xFFFF  # last valid handle
-        log.info("Fetching characteristics for connection %d",
+        log.info("Fetching services for connection %d",
                  connection_handle)
         self.send_command(
-            CommandBuilder.attclient_find_information(
-                connection_handle, att_handle_start, att_handle_end))
+            CommandBuilder.gatt_discover_primary_services(
+                connection_handle))
 
-        self.expect(ResponsePacketType.attclient_find_information)
+        self.expect(ResponsePacketType.gatt_discover_primary_services)
         try:
-            self.expect(EventPacketType.attclient_procedure_completed,
-                        timeout=30)
+            success = False
+            while not success:
+                matched_packet_type, chunk = self.expect_any(
+                    [EventPacketType.gatt_service,
+                     EventPacketType.gatt_procedure_completed],
+                    timeout=30)
+
+                if matched_packet_type == EventPacketType.gatt_service:
+                    pass
+                elif matched_packet_type == EventPacketType.gatt_procedure_completed:
+                    success = True
+
+
+            #self.expect(EventPacketType.gatt_service,
+            #           timeout=30)
         except ExpectedResponseTimeout:
             log.warn("Continuing even though discovery hasn't finished")
 
+        for serv_uuid_str, srvc_obj in (
+                self._services[connection_handle].items()):
+            log.info("Service %s is handle 0x%x",
+                     serv_uuid_str, srvc_obj.handle)
+            for desc_uuid_str, desc_handle in (
+                    srvc_obj.characteristics.items()):
+                log.info("Service characteristic %s is handle 0x%x",
+                         desc_uuid_str, desc_handle)
+        return self._services[connection_handle]
+
+
+    def discover_characteristics(self, connection_handle):
+
+        log.info("Fetching characteristics for connection %d",
+                 connection_handle)
+        services = self._services[connection_handle]
+
+        for svc in services: # look for characteristics on each service
+            self._current_service = svc
+            try:
+                # send characteristic command
+                self.send_command(
+                    CommandBuilder.gatt_discover_characteristics(
+                        connection_handle, services[svc].handle))
+                self.expect(ResponsePacketType.gatt_discover_characteristics)
+
+                success = False
+                while not success:
+                    matched_packet_type, chunk = self.expect_any(
+                        [EventPacketType.gatt_characteristic,
+                         EventPacketType.gatt_procedure_completed],
+                        timeout=30)
+
+                    if (matched_packet_type ==
+                            EventPacketType.gatt_service):
+                        pass
+                    elif (matched_packet_type ==
+                          EventPacketType.gatt_procedure_completed):
+                        success = True
+
+            except ExpectedResponseTimeout:
+                log.warning("Continuing even though discovery hasn't finished")
+
         for char_uuid_str, char_obj in (
                 self._characteristics[connection_handle].items()):
-            log.info("Characteristic 0x%s is handle 0x%x",
+            log.info("Characteristic %s is handle 0x%x",
                      char_uuid_str, char_obj.handle)
-            for desc_uuid_str, desc_handle in (
-                    char_obj.descriptors.items()):
-                log.info("Characteristic descriptor 0x%s is handle 0x%x",
-                         desc_uuid_str, desc_handle)
+
         return self._characteristics[connection_handle]
+
+
+    def discover_descriptors(self, connection_handle):
+
+        characteristics = self._characteristics[connection_handle]
+        log.info("Fetching services for connection %d",
+                 connection_handle)
+        try:
+            for chr in characteristics:
+                self._current_characteristic = chr
+                self.send_command(
+                    CommandBuilder.gatt_discover_descriptors(
+                        connection_handle, characteristics[self._current_characteristic ].handle))
+
+                self.expect(ResponsePacketType.gatt_discover_descriptors)
+                # wait for descriptors and procedure complete
+                success = False
+                while not success:
+                    matched_packet_type, chunk = self.expect_any(
+                        [EventPacketType.gatt_descriptor,
+                         EventPacketType.gatt_procedure_completed],
+                        timeout=30)
+
+                    if matched_packet_type == \
+                            EventPacketType.gatt_descriptor:
+                        pass
+                    elif matched_packet_type == \
+                            EventPacketType.gatt_procedure_completed:
+                        success = True
+
+        except ExpectedResponseTimeout:
+            log.warning("Continuing even though discovery hasn't finished")
+
+        for chr_uuid_str, chr_obj in (
+                self._characteristics[connection_handle].items()):
+            if len(chr_obj.descriptors) > 0:
+                for desc_uuid, desc_handle in chr_obj.descriptors.items():
+                    log.info("Descriptor exists for Characteristic %s with handle 0x%x",
+                         chr_uuid_str, desc_handle)
+        return self._characteristics # updated characteristics
+
 
     @staticmethod
     def _connection_status_flag(flags, flag_to_find):
@@ -895,3 +996,129 @@ class BGAPIBackend(BLEBackend):
         """
         self.address = args['address']
         log.debug("Adapter address = {0}".format(args['address']))
+
+    ### New :
+
+    def return_uuid(self, raw_uuid):
+        # Convert 4-byte UUID shorthand to a full, 16-byte UUID
+        uuid_type = self._get_uuid_type(raw_uuid)
+        if uuid_type != UUIDType.custom:
+            uuid = uuid16_to_uuid(int(
+                bgapi_address_to_hex(raw_uuid).replace(':', ''), 16))
+        else:
+            uuid = UUID(bytes=bytes(reversed(raw_uuid)))
+
+        return uuid
+
+    def _ble_evt_gatt_service(self, args):
+        """
+        Handles the event for Service discovery.
+
+        Adds the service to the dictionary of services or adds
+        the characteristic to the dictionary of descriptors in the current
+        service.
+
+        These events will be occur in an order similar to the following:
+        1) primary service uuid
+        2) characteristic uuid
+        3) 0 or more descriptors
+        4) repeat steps 2-3
+
+
+            args -- dictionary containing:
+                * 'connection_handle'
+                * service handler ('service')
+                * characteristic UUID ('uuid') # as bytearray
+        """
+        #
+        raw_uuid = bytearray(args['uuid'])
+        uuid = self.return_uuid(raw_uuid)
+        uuid_type = self._get_uuid_type(raw_uuid)
+
+        # TODO is there a way to get the servie from the packet instead
+        # of having to track the "current" service?
+        if (uuid_type == UUIDType.characteristic and
+                self._current_service is not None):
+            self._current_service.add_characteristic(uuid, args['characteristic'])
+        elif (uuid_type == UUIDType.custom or
+              uuid_type == UUIDType.nonstandard or
+              uuid_type == UUIDType.service):
+            if uuid_type == UUIDType.custom:
+                log.info("Found custom service %s" % uuid)
+            elif uuid_type == UUIDType.service:
+                log.info("Found approved service %s" % uuid)
+            elif uuid_type == UUIDType.nonstandard:
+                log.info("Found nonstandard 4-byte service %s" % uuid)
+            new_svc = Service(uuid, args['service'])
+            self._current_service = new_svc
+            self._services[
+                args['connection_handle']][uuid] = new_svc
+
+
+    def _ble_evt_gatt_characteristic(self, args):
+        """
+        Handles the event for characteritic discovery.
+
+        Adds the characteristic to the dictionary of characteristics or adds
+        the descriptor to the dictionary of descriptors in the current
+        characteristic.
+
+        args -- dictionary containing the characteristic handle ('chrhandle'),
+        and characteristic UUID ('uuid')
+        """
+
+        #
+        raw_uuid  = bytearray(args['uuid'])
+        uuid      = self.return_uuid(raw_uuid)
+        uuid_type = self._get_uuid_type(raw_uuid)
+
+        # TODO is there a way to get the characteristic from the packet instead
+        # of having to track the "current" characteristic?
+        if (uuid_type == UUIDType.descriptor and
+                self._current_characteristic is not None):
+            self._current_characteristic.add_descriptor(uuid, args['descriptor'])
+        elif (uuid_type == UUIDType.custom or
+              uuid_type == UUIDType.nonstandard or
+              uuid_type == UUIDType.characteristic):
+            if uuid_type == UUIDType.custom:
+                log.info("Found custom characteristic %s" % uuid)
+            elif uuid_type == UUIDType.characteristic:
+                log.info("Found approved characteristic %s" % uuid)
+            elif uuid_type == UUIDType.nonstandard:
+                log.info("Found nonstandard 4-byte characteristic %s" % uuid)
+            new_char = Characteristic(uuid, args['characteristic'])
+            #
+            conn_handle = args['connection_handle']
+            self._services[conn_handle][self._current_service].add_characteristic(uuid, args['characteristic']) # TODO: Use class instead of dict?
+            #
+            self._current_characteristic = new_char
+            self._characteristics[
+                args['connection_handle']][uuid] = new_char
+
+    def _ble_evt_gatt_descriptor(self, args):
+        """
+        Handles the event for descriptor discovery.
+
+        Adds the descriptor to the dictionary of descriptors.
+
+        args -- dictionary containing the characteristic handle ('chrhandle'),
+        and characteristic UUID ('uuid')
+        """
+
+        #
+        raw_uuid = bytearray(args['uuid'])
+        uuid = self.return_uuid(raw_uuid)
+        uuid_type = self._get_uuid_type(raw_uuid)
+
+        if (uuid_type == UUIDType.custom or
+                uuid_type == UUIDType.nonstandard or
+                uuid_type == UUIDType.descriptor):
+            if uuid_type == UUIDType.custom:
+                log.info("Found custom descriptor %s" % uuid)
+            elif uuid_type == UUIDType.descriptor:
+                log.info("Found approved descriptor %s" % uuid)
+            elif uuid_type == UUIDType.nonstandard:
+                log.info("Found nonstandard 4-byte descriptor %s" % uuid)
+            conn_handle = args['connection_handle']
+            self._characteristics[conn_handle][self._current_characteristic].add_descriptor(uuid, args['descriptor'])
+

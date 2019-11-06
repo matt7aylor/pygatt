@@ -97,16 +97,13 @@ ResponsePacketType = Enum('ResponsePacketType', [
     'attclient_execute_write',      # XXX
 
     # New commands
-    # 'gatt_discover_characteristics',
     # 'gatt_discover_characteristics_by_uuid',
-    # 'gatt_discover_descriptors',
-    # 'gatt_discover_primary_services',
     # 'gatt_discover_primary_services_by_uuid',
-    # 'gatt_discover_descriptors',
-    # 'gatt_discover_descriptors',
-    # 'gatt_discover_descriptors',
-    # 'gatt_discover_descriptors',
-    # 'gatt_discover_descriptors',
+    'gatt_discover_primary_services',
+    'gatt_discover_characteristics',
+    'gatt_discover_descriptors',
+
+
 
     # Old removed commands
     # 'attclient_find_by_type_value',
@@ -123,6 +120,7 @@ ResponsePacketType = Enum('ResponsePacketType', [
     'attributes_user_write_response',
     # New commands
     # XXX
+
 
     ### hardware ### Total change XXX
 
@@ -193,7 +191,7 @@ EventPacketType = Enum('EventPacketType', [
     # 'system_external_signal',
     # 'system_awake',
     # 'system_hardware_error',
-    # 'system_error',
+    'system_error',
 
     # Old removed
     # 'system_debug',
@@ -232,8 +230,9 @@ EventPacketType = Enum('EventPacketType', [
     'attclient_attribute_value',            # XXX
     # New events
     'gatt_mtu_exchanged',                   # XXX What if MTU changes?
-    # 'gatt_characteristic',
-    # 'gatt_descriptor',
+    'gatt_characteristic',
+    'gatt_procedure_completed',
+    'gatt_descriptor',
     # 'gatt_characteristic_value',
     # 'gatt_descriptor_value',
     # Old removed
@@ -365,6 +364,12 @@ RESPONSE_PACKET_MAPPING = {
     # (8, 2): ResponsePacketType.test_phy_reset,
     # (8, 3): ResponsePacketType.test_get_channel_map,
     # (8, 4): ResponsePacketType.test_debug,
+
+    (9, 1): ResponsePacketType.gatt_discover_primary_services,
+    (9, 3): ResponsePacketType.gatt_discover_characteristics,
+    (9, 6): ResponsePacketType.gatt_discover_descriptors
+
+
 }
 
 # TODO instead of this, have a different enum for each message type + class, and
@@ -372,6 +377,7 @@ RESPONSE_PACKET_MAPPING = {
 
 EVENT_PACKET_MAPPING = {
     (1, 0): EventPacketType.system_boot,
+    (1, 6) : EventPacketType.system_error,
     # (0, 1): EventPacketType.system_debug,
     # (0, 2): EventPacketType.system_endpoint_watermark_rx,
     # (0, 3): EventPacketType.system_endpoint_watermark_tx,
@@ -395,6 +401,10 @@ EVENT_PACKET_MAPPING = {
 
     (9, 0): EventPacketType.gatt_mtu_exchanged,
     (9, 1): EventPacketType.gatt_service,
+    (9, 2): EventPacketType.gatt_characteristic,
+    (9, 3): EventPacketType.gatt_descriptor,
+    (9, 6): EventPacketType.gatt_procedure_completed,
+
     # (4, 0): EventPacketType.attclient_indicated,
     (4, 1): EventPacketType.attclient_procedure_completed,
     # (4, 3): EventPacketType.attclient_attribute_found,
@@ -710,6 +720,22 @@ class BGLib(object):
             # response = {
                 # 'output': output_data
             # }
+        elif packet_type == ResponsePacketType.gatt_discover_primary_services:
+            result = unpack('<H', payload)
+            response = {
+                'result': result
+            }
+        elif packet_type == ResponsePacketType.gatt_discover_descriptors:
+            result = unpack('<H', payload)
+            response = {
+                'result': result
+            }
+        elif packet_type == ResponsePacketType.gatt_discover_characteristics:
+            result= unpack('<H', payload)
+            response = {
+                'result': result
+            }
+
 
         return packet_type, response
 
@@ -729,6 +755,12 @@ class BGLib(object):
                 'patch': data[2], 'build': data[3],
                 'bootloader': data[4], 'hw': data[5],
                 'hash': data[6]
+            }
+        elif packet_type == EventPacketType.system_error:
+            reason, data_value = unpack('<HB', payload)
+            response = {
+                'reason': reason,
+                'data': data_value
             }
         # elif packet_type == EventPacketType.system_debug:
             # data_len = unpack('<B', payload[:1])[0]
@@ -875,7 +907,8 @@ class BGLib(object):
             )
             uuid_data = bytearray(payload[6:])
             response = {
-                'connection_handle': connection, 'service': service,
+                'connection_handle': connection,
+                'service': service,
                 'uuid': uuid_data
             }
         # elif packet_type == EventPacketType.attclient_attribute_found:
@@ -982,6 +1015,34 @@ class BGLib(object):
             # response = {
                 # 'input': input, 'value': value
             # }
+        elif packet_type == EventPacketType.gatt_characteristic:  # 9, 2
+
+            connection, characteristic, properties = unpack('<BHB', payload[:4])
+            uuid = bytearray(payload[5:])
+            response = {
+                'connection_handle': connection,
+                'characteristic': characteristic,
+                'properties': properties,
+                'uuid': uuid
+            }
+
+        elif packet_type == EventPacketType.gatt_descriptor:  # 9, 3
+
+            connection, descriptor = unpack('<BH', payload[:3])
+            uuid = bytearray(payload[4:])
+            response = {
+                'connection_handle': connection,
+                'descriptor': descriptor,
+                'uuid' : uuid
+            }
+
+        elif packet_type == EventPacketType.gatt_procedure_completed: # 9, 6
+
+            connection, result = unpack('<BH', payload)
+            response = {
+                'connection_handle': connection,
+                'result': result
+            }
 
         return packet_type, response
 
