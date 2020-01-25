@@ -427,3 +427,36 @@ class BGAPICommandPacketBuilder(object):
     @staticmethod
     def gatt_discover_descriptors(connection, characteristic):
         return pack('<4BBH', 0x20, 0x03, 0x09, 0x06, connection, characteristic)
+
+    @staticmethod
+    def gatt_write_characteristic_value(connection, characteristic, characteristic_value):
+        return pack('<4BBH%dB' % len(characteristic_value) , 0x20, 0x04, 0x09, 0x09, connection, characteristic, *characteristic_value)
+
+    @staticmethod
+    def gatt_read_characteristic_value(connection, characteristic):
+        return pack('<4BBH', 0x20, 0x03, 0x09, 0x07, connection, characteristic)  # TODO just for marking: Tried to get data from Thingy (its name), seems to be working.
+
+
+
+
+    @staticmethod
+    def gatt_discover_characteristics_by_uuid(connection, service_handle, uuid): # TODO
+        return pack('<4BBH', 0x20, 0x06, 0x09, 0x06, connection, service_handle, uuid)
+
+    @staticmethod
+    def gatt_discover_primary_services_by_uuid(connection, uuid): # TODOs
+        return pack('<4BB%dB' % len(uuid), 0x20, 0x02, 0x09, 0x02, connection, uuid) # TODO is this right?
+
+    @staticmethod
+    def gatt_execute_characteristic_value_write(connection, flags):  # TODO
+        return pack('<4BB', 0x20, 0x02, 0x09, 0x0c, connection, flags)
+
+    @staticmethod
+    def gatt_find_included_services(connection, service): # TODO
+        return pack('<4BBI', 0x20, 0x05, 0x09, 0x10, connection, service)
+
+
+
+    @staticmethod
+    def gatt_read_characteristic_value_by_uuid(connection, service_handle, characteristic):
+        return pack('<4BBI%dB' % len(characteristic), 0x20, 0x06, 0x09, 0x08, connection, service_handle, characteristic) # TODO

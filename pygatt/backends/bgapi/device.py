@@ -78,22 +78,23 @@ class BGAPIBLEDevice(BLEDevice):
     def char_read_handle(self, handle, timeout=None):
         log.info("Reading characteristic at handle %d", handle)
         self._backend.send_command(
-            CommandBuilder.attclient_read_by_handle(
+            CommandBuilder.gatt_read_characteristic_value(
                 self._handle, handle))
 
-        self._backend.expect(ResponsePacketType.attclient_read_by_handle)
+        self._backend.expect(ResponsePacketType.gatt_read_characteristic_value)
         success = False
         while not success:
             matched_packet_type, response = self._backend.expect_any(
-                [EventPacketType.attclient_attribute_value,
-                 EventPacketType.attclient_procedure_completed],
+                [EventPacketType.gatt_characteristic_value,
+                 EventPacketType.gatt_procedure_completed],
                 timeout=timeout)
             # TODO why not just expect *only* the attribute value response,
             # then it would time out and raise an exception if allwe got was
             # the 'procedure completed' response?
-            if matched_packet_type != EventPacketType.attclient_attribute_value:
+            if matched_packet_type != EventPacketType.gatt_procedure_completed and\
+                matched_packet_type != EventPacketType.gatt_characteristic_value: #attclient_attribute_value:
                 raise BGAPIError("Unable to read characteristic")
-            if response['atthandle'] == handle:
+            if response['characteristic'] == handle:
                 # Otherwise we received a response from a wrong handle (e.g.
                 # from a notification) so we keep trying to wait for the
                 # correct one
@@ -132,19 +133,20 @@ class BGAPIBLEDevice(BLEDevice):
                     success = True
         return bytearray(response)
 
+    # TODO: gatt_prepare_characteristic_value_write?
     @connection_required
-    def char_write_handle(self, char_handle, value, wait_for_response=True):
+    def char_write_handle(self, char_handle, value, wait_for_response=True): #gatt_write_characteristic_value
         while True:
             value_list = [b for b in value]
             # An "attribute write" is always acknowledged by the remote host.
             if wait_for_response:
                 self._backend.send_command(
-                    CommandBuilder.attclient_attribute_write(
+                    CommandBuilder.gatt_write_characteristic_value(#attclient_attribute_write( #gatt_write_characteristic
                         self._handle, char_handle, value_list))
                 self._backend.expect(
-                    ResponsePacketType.attclient_attribute_write)
+                    ResponsePacketType.gatt_write_characteristic_value)
                 packet_type, response = self._backend.expect(
-                    EventPacketType.attclient_procedure_completed,
+                    EventPacketType.gatt_procedure_completed,
                     # According to the BLE spec, the device has 30 seconds to
                     # repsonse to the attribute write.
                     timeout=30)
@@ -152,7 +154,7 @@ class BGAPIBLEDevice(BLEDevice):
             # A "command" write is unacknowledged - don't wait for a response.
             else:
                 self._backend.send_command(
-                    CommandBuilder.attclient_write_command(
+                    CommandBuilder.attclient_write_command( #gatt_write_characteristic_without_response
                         self._handle, char_handle, value_list))
                 packet_type, response = self._backend.expect(
                     ResponsePacketType.attclient_write_command)

@@ -87,6 +87,20 @@ ResponsePacketType = Enum('ResponsePacketType', [
     # 'flash_erase_page',
     # 'flash_write_words',
 
+
+    # gatt #
+
+    # read
+    'gatt_read_characteristic_value',
+    #'gatt_read_characteristic_value_by_uuid',
+    #'gatt_read_characteristic_value_from_offset',
+
+    # write
+    'gatt_write_characteristic_value',
+    #'gatt_write_characteristic_value_without_response'
+    #'gatt_write_descriptor_value',
+
+
     ### gatt ### XXX Mostly new section, replaces attclient?
     'attclient_find_information',   # XXX
     'attclient_read_by_handle',     # XXX
@@ -233,8 +247,8 @@ EventPacketType = Enum('EventPacketType', [
     'gatt_characteristic',
     'gatt_procedure_completed',
     'gatt_descriptor',
-    # 'gatt_characteristic_value',
-    # 'gatt_descriptor_value',
+    'gatt_characteristic_value',
+    'gatt_descriptor_value',
     # Old removed
     # 'attclient_indicated',
     # 'attclient_read_multiple_response',
@@ -367,7 +381,9 @@ RESPONSE_PACKET_MAPPING = {
 
     (9, 1): ResponsePacketType.gatt_discover_primary_services,
     (9, 3): ResponsePacketType.gatt_discover_characteristics,
-    (9, 6): ResponsePacketType.gatt_discover_descriptors
+    (9, 6): ResponsePacketType.gatt_discover_descriptors,
+    (9, 7): ResponsePacketType.gatt_read_characteristic_value,
+    (9, 9): ResponsePacketType.gatt_write_characteristic_value
 
 
 }
@@ -403,6 +419,8 @@ EVENT_PACKET_MAPPING = {
     (9, 1): EventPacketType.gatt_service,
     (9, 2): EventPacketType.gatt_characteristic,
     (9, 3): EventPacketType.gatt_descriptor,
+    (9, 4): EventPacketType.gatt_characteristic_value,
+    (9, 5): EventPacketType.gatt_descriptor_value,
     (9, 6): EventPacketType.gatt_procedure_completed,
 
     # (4, 0): EventPacketType.attclient_indicated,
@@ -424,6 +442,7 @@ EVENT_PACKET_MAPPING = {
     # (7, 0): EventPacketType.hardware_io_port_status,
     (0x0c, 0): EventPacketType.hardware_soft_timer,
     # (7, 2): EventPacketType.hardware_adc_result,
+
 }
 
 
@@ -1034,6 +1053,31 @@ class BGLib(object):
                 'connection_handle': connection,
                 'descriptor': descriptor,
                 'uuid' : uuid
+            }
+
+        elif packet_type == EventPacketType.gatt_characteristic_value:  # 9, 4
+
+            # TODO: TEST
+            connection, characteristic, att_opcode, offset = unpack('<BHBH', payload[:6])
+            value = bytearray(payload[7:])
+            response = {
+                'connection_handle': connection,
+                'characteristic': characteristic,
+                'att_opcode' : att_opcode,
+                'offset': offset,
+                'value': value
+            }
+
+        elif packet_type == EventPacketType.gatt_descriptor_value:  # 9, 5
+
+            # TODO: TEST
+            connection, descriptor, offset = unpack('<BHH', payload[:5])
+            value = bytearray(payload[6:])
+            response = {
+                'connection_handle': connection,
+                'descriptor': descriptor,
+                'offset': offset,
+                'value': value
             }
 
         elif packet_type == EventPacketType.gatt_procedure_completed: # 9, 6
